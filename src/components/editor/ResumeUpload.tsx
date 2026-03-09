@@ -12,6 +12,26 @@ function getFileExtension(name: string): string {
   return name.split('.').pop()?.toLowerCase() || '';
 }
 
+/** Read a File as ArrayBuffer using FileReader (works on all Safari versions including mobile) */
+function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/** Read a File as text using FileReader (works on all Safari versions including mobile) */
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
+}
+
 function wrapTextInHtml(text: string): string {
   const paragraphs = text
     .split(/\n{2,}/)
@@ -276,7 +296,7 @@ async function extractPdf(file: File): Promise<{ html: string; plainText: string
   const pdfjsLib = await import('pdfjs-dist');
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = await readFileAsArrayBuffer(file);
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
   const allLines: ReconstructedLine[] = [];
@@ -318,7 +338,7 @@ async function extractPdf(file: File): Promise<{ html: string; plainText: string
 
 async function extractDocx(file: File): Promise<{ html: string; plainText: string }> {
   const mammoth = await import('mammoth');
-  const arrayBuffer = await file.arrayBuffer();
+  const arrayBuffer = await readFileAsArrayBuffer(file);
   const result = await mammoth.convertToHtml({ arrayBuffer });
   const html = result.value;
 
@@ -331,7 +351,7 @@ async function extractDocx(file: File): Promise<{ html: string; plainText: strin
 }
 
 async function extractTxt(file: File): Promise<{ html: string; plainText: string }> {
-  const plainText = await file.text();
+  const plainText = await readFileAsText(file);
   const html = wrapTextInHtml(plainText);
   return { html, plainText };
 }
