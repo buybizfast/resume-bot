@@ -6,7 +6,7 @@ interface ResumeUploadProps {
   onResumeExtracted: (html: string, plainText: string) => void;
 }
 
-const ACCEPTED_EXTENSIONS = '.pdf,.docx,.doc,.txt';
+const ACCEPTED_EXTENSIONS = '.pdf,.docx,.doc,.txt'; // .doc accepted but shows conversion message
 
 function getFileExtension(name: string): string {
   return name.split('.').pop()?.toLowerCase() || '';
@@ -387,9 +387,12 @@ export default function ResumeUpload({ onResumeExtracted }: ResumeUploadProps) {
             result = await extractPdf(file);
             break;
           case 'docx':
-          case 'doc':
             result = await extractDocx(file);
             break;
+          case 'doc':
+            throw new Error(
+              'The legacy .doc format is not supported. Please save your resume as .docx, .pdf, or .txt and try again.'
+            );
           case 'txt':
             result = await extractTxt(file);
             break;
@@ -406,8 +409,13 @@ export default function ResumeUpload({ onResumeExtracted }: ResumeUploadProps) {
         setFileName(file.name);
         onResumeExtracted(result.html, result.plainText);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to extract content from file';
+        let message: string;
+        if (err instanceof Error) {
+          // Include stack trace for debugging mobile issues
+          message = err.stack ? `${err.message}\n\nStack: ${err.stack}` : err.message;
+        } else {
+          message = `Failed to extract content from file: ${String(err)}`;
+        }
         setError(message);
         setFileName(null);
       } finally {
@@ -624,7 +632,7 @@ export default function ResumeUpload({ onResumeExtracted }: ResumeUploadProps) {
         className="hidden"
       />
 
-      {error && <p className="text-xs text-[var(--danger)]">{error}</p>}
+      {error && <pre className="whitespace-pre-wrap break-all text-xs text-[var(--danger)]">{error}</pre>}
     </div>
   );
 }
