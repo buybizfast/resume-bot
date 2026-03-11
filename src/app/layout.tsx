@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
-import MobileErrorOverlay from "@/components/MobileErrorOverlay";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-display",
@@ -38,7 +37,6 @@ export default function RootLayout({
         className={`${instrumentSerif.variable} ${dmSans.variable} ${dmMono.variable} antialiased`}
       >
         {children}
-        <MobileErrorOverlay />
       </body>
     </html>
   );

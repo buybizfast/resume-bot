@@ -409,13 +409,8 @@ export default function ResumeUpload({ onResumeExtracted }: ResumeUploadProps) {
         setFileName(file.name);
         onResumeExtracted(result.html, result.plainText);
       } catch (err) {
-        let message: string;
-        if (err instanceof Error) {
-          // Include stack trace for debugging mobile issues
-          message = err.stack ? `${err.message}\n\nStack: ${err.stack}` : err.message;
-        } else {
-          message = `Failed to extract content from file: ${String(err)}`;
-        }
+        const message =
+          err instanceof Error ? err.message : 'Failed to extract content from file';
         setError(message);
         setFileName(null);
       } finally {
@@ -632,7 +627,7 @@ export default function ResumeUpload({ onResumeExtracted }: ResumeUploadProps) {
         className="hidden"
       />
 
-      {error && <pre className="whitespace-pre-wrap break-all text-xs text-[var(--danger)]">{error}</pre>}
+      {error && <p className="text-xs text-[var(--danger)]">{error}</p>}
     </div>
   );
 }
