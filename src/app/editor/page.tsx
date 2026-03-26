@@ -194,7 +194,7 @@ function EditorPageContent() {
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-2 sm:px-4">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <a
-            href="/"
+            href="/dashboard"
             className="flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-secondary)]"
           >
             <svg

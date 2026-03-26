@@ -107,7 +107,7 @@ export default function CoverLetterPage() {
           <div className="flex items-center gap-4">
             <button
               type="button"
-              onClick={() => router.push('/editor')}
+              onClick={() => router.push('/dashboard')}
               className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-secondary)]"
             >
               <svg
@@ -121,7 +121,7 @@ export default function CoverLetterPage() {
               >
                 <path d="M15 18l-6-6 6-6" />
               </svg>
-              Back to Editor
+              Back to Dashboard
             </button>
             <div className="h-5 w-px bg-[var(--border-strong)]" />
             <h1 className="text-lg font-semibold text-[var(--text-primary)]">

@@ -14,11 +14,11 @@
   --text-tertiary: #8C96A4;
   --text-muted: #B0B8C4;
 
-  /* Brand accent - warm emerald */
-  --accent: #0B7A5E;
-  --accent-hover: #096B52;
-  --accent-light: #E8F5F0;
-  --accent-subtle: #D0EDE4;
+  /* Brand accent - electric blue */
+  --accent: #1A6FD4;
+  --accent-hover: #1560BC;
+  --accent-light: #EBF2FC;
+  --accent-subtle: #CCDDF7;
 
   /* Secondary accent - warm gold */
   --gold: #C4952C;
@@ -26,8 +26,8 @@
   --gold-subtle: #F5E6C4;
 
   /* Semantic colors */
-  --success: #0B7A5E;
-  --success-light: #E8F5F0;
+  --success: #1A6FD4;
+  --success-light: #EBF2FC;
   --warning: #C4952C;
   --warning-light: #FDF6E7;
   --danger: #C23B3B;
@@ -45,7 +45,7 @@
   --shadow-paper: 0 1px 4px rgba(27, 43, 75, 0.06), 0 4px 16px rgba(27, 43, 75, 0.04);
 
   /* Score colors */
-  --score-excellent: #0B7A5E;
+  --score-excellent: #1A6FD4;
   --score-good: #C4952C;
   --score-fair: #D47B2A;
   --score-poor: #C23B3B;

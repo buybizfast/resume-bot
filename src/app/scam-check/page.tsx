@@ -82,7 +82,7 @@ export default function ScamCheckPage() {
         <div className="mx-auto flex max-w-3xl items-center gap-4 px-6 py-4">
           <button
             type="button"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/dashboard')}
             className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-secondary)]"
           >
             <svg

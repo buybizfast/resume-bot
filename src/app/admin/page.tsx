@@ -259,7 +259,7 @@ export default function AdminPage() {
               </p>
             </div>
             <a
-              href="/"
+              href="/dashboard"
               className="rounded-md border border-[var(--border)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-raised)]"
             >
               Back to App

@@ -13,7 +13,7 @@ export default function AuthCallbackPage() {
     async function handleCallback() {
       try {
         await completeMagicLinkSignIn();
-        router.replace('/');
+        router.replace('/dashboard');
       } catch {
         setError('Failed to complete sign-in. The link may have expired.');
       }
@@ -36,7 +36,7 @@ export default function AuthCallbackPage() {
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">Sign-In Failed</h2>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">{error}</p>
           <a
-            href="/"
+            href="/dashboard"
             className="mt-4 inline-block rounded-lg bg-[var(--accent)] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
           >
             Go Home
