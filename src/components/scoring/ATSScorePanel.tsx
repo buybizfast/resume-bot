@@ -8,6 +8,10 @@ import { stripMarkdown } from '@/lib/text-utils';
 import ScoreGauge from '@/components/scoring/ScoreGauge';
 import KeywordChips from '@/components/scoring/KeywordChips';
 import SuggestionsList from '@/components/scoring/SuggestionsList';
+import LoginModal from '@/components/auth/LoginModal';
+import PaywallModal from '@/components/payments/PaywallModal';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserCredits } from '@/hooks/useUserCredits';
 import type { ATSScoreResult, Suggestion } from '@/types/scoring';
 
 interface ATSScorePanelProps {
@@ -123,6 +127,10 @@ function FixResumeSection({
   suggestions: Suggestion[];
   onResumeFix: (newHTML: string) => void;
 }) {
+  const { user, getIdToken } = useAuth();
+  const { canFix, refreshCredits } = useUserCredits();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
   const [isFixing, setIsFixing] = useState(false);
   const [fixResult, setFixResult] = useState<{ changes: string[] } | null>(null);
   const [fixError, setFixError] = useState<string | null>(null);
@@ -155,6 +163,18 @@ function FixResumeSection({
   }, []);
 
   const handleFixResume = useCallback(async () => {
+    // ─── Auth Gate ───
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    // ─── Credit Gate ───
+    if (!canFix) {
+      setShowPaywallModal(true);
+      return;
+    }
+
     const selected = suggestions.filter((_, i) => selectedSuggestions.has(i));
     if (selected.length === 0) return;
 
@@ -163,6 +183,9 @@ function FixResumeSection({
     setFixResult(null);
 
     try {
+      const token = await getIdToken();
+      if (!token) throw new Error('Authentication failed');
+
       const resumeState = useResumeStore.getState();
       const activeResume = resumeState.resumes.find(
         (r) => r.id === resumeState.activeResumeId
@@ -173,16 +196,26 @@ function FixResumeSection({
 
       const res = await fetch('/api/fix-resume', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           resumeHTML: activeResume.html,
           resumePlainText: activeResume.plainText,
+          resumeTitle: activeResume.title,
           jobDescription,
           suggestions: selected.map(
             (s) => `[${s.priority.toUpperCase()}] ${s.category}: ${s.message} - ${s.action}`
           ),
         }),
       });
+
+      // Handle 402 — needs payment
+      if (res.status === 402) {
+        setShowPaywallModal(true);
+        return;
+      }
 
       if (!res.ok) {
         const text = await res.text();
@@ -194,6 +227,8 @@ function FixResumeSection({
       if (data.revisedHTML) {
         onResumeFix(data.revisedHTML);
         setFixResult({ changes: data.changes || ['Resume has been updated'] });
+        // Refresh credits after successful fix
+        refreshCredits();
       } else {
         throw new Error('No revised HTML returned');
       }
@@ -202,7 +237,7 @@ function FixResumeSection({
     } finally {
       setIsFixing(false);
     }
-  }, [suggestions, selectedSuggestions, onResumeFix]);
+  }, [suggestions, selectedSuggestions, onResumeFix, user, canFix, getIdToken, refreshCredits]);
 
   if (suggestions.length === 0) return null;
 
@@ -320,6 +355,18 @@ function FixResumeSection({
           </ul>
         </div>
       )}
+
+      {/* Auth & Payment Modals */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message="Sign in to use AI-powered resume fixes"
+      />
+      <PaywallModal
+        isOpen={showPaywallModal}
+        onClose={() => setShowPaywallModal(false)}
+        onCreditsUpdated={refreshCredits}
+      />
     </div>
   );
 }

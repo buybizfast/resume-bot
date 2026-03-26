@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryAndWait } from '@/lib/blotato';
+import { verifyAuth, requireCredits, deductCredit, handleAuthError, AuthError } from '@/lib/auth-helpers';
 
 export async function POST(request: NextRequest) {
   try {
+    // ─── Auth + Credit Check ───
+    let uid: string;
+    let fixType: 'free' | 'paid';
+    try {
+      const authResult = await verifyAuth(request);
+      uid = authResult.uid;
+      const creditCheck = await requireCredits(uid);
+      if (!creditCheck.canFix) {
+        return NextResponse.json(
+          { error: 'No fixes remaining', requiresPayment: true },
+          { status: 402 }
+        );
+      }
+      fixType = creditCheck.fixType as 'free' | 'paid';
+    } catch (error) {
+      return handleAuthError(error);
+    }
+
     const body = await request.json();
 
     if (!body.resumeText || typeof body.resumeText !== 'string') {
@@ -33,8 +52,16 @@ export async function POST(request: NextRequest) {
 
     const suggestions = await queryAndWait(query);
 
+    // ─── Deduct credit on success ───
+    try {
+      await deductCredit(uid, fixType, 'AI Optimization');
+    } catch (creditErr) {
+      console.error('[POST /api/optimize] Failed to deduct credit:', creditErr);
+    }
+
     return NextResponse.json({ suggestions });
   } catch (err) {
+    if (err instanceof AuthError) return handleAuthError(err);
     const message = err instanceof Error ? err.message : 'Unknown error during resume optimization';
     console.error('[POST /api/optimize]', message);
     return NextResponse.json({ error: message }, { status: 500 });

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useResumeStore } from '@/hooks/useResumeStore';
 import { RESUME_TEMPLATES } from '@/lib/resume-templates';
 import ResumeUpload from '@/components/editor/ResumeUpload';
+import UserMenu from '@/components/auth/UserMenu';
 
 function ATSScoreStamp({ score }: { score: number | null }) {
   if (score === null) {
@@ -291,16 +292,19 @@ export default function DashboardPage() {
                 Optimize your resume, land more interviews
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowTemplateModal(true)}
-              className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:bg-[var(--accent-hover)] hover:shadow-[var(--shadow-md)]"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              New Resume
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(true)}
+                className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:bg-[var(--accent-hover)] hover:shadow-[var(--shadow-md)]"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                New Resume
+              </button>
+              <UserMenu />
+            </div>
           </div>
         </div>
       </header>

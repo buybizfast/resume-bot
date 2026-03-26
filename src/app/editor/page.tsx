@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useResumeStore } from '@/hooks/useResumeStore';
 import JobDescriptionInput from '@/components/job/JobDescriptionInput';
 import ResumeEditor from '@/components/editor/ResumeEditor';
 import ResumeUpload from '@/components/editor/ResumeUpload';
 import ATSScorePanel from '@/components/scoring/ATSScorePanel';
 import DidYouKnowCard from '@/components/did-you-know/DidYouKnowCard';
+import UserMenu from '@/components/auth/UserMenu';
+import CreditsBadge from '@/components/payments/CreditsBadge';
 
 function PanelToggle({
   side,
@@ -53,7 +56,7 @@ function PanelToggle({
 
 type MobileTab = 'job' | 'editor' | 'score';
 
-export default function EditorPage() {
+function EditorPageContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
@@ -61,7 +64,21 @@ export default function EditorPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor');
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
+
+  // Handle payment success redirect from Stripe
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      setPaymentSuccess(true);
+      // Auto-hide after 5 seconds
+      const timer = setTimeout(() => setPaymentSuccess(false), 5000);
+      // Clean up URL
+      window.history.replaceState({}, '', '/editor');
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   const resumes = useResumeStore((state) => state.resumes);
   const activeResumeId = useResumeStore((state) => state.activeResumeId);
@@ -243,8 +260,23 @@ export default function EditorPage() {
             </svg>
             Export
           </button>
+          <CreditsBadge />
+          <div className="ml-1 hidden h-4 w-px bg-[var(--border-strong)] sm:block" />
+          <UserMenu />
         </div>
       </header>
+
+      {/* Payment Success Banner */}
+      {paymentSuccess && (
+        <div className="flex items-center justify-center gap-2 bg-[var(--accent)] px-4 py-2 text-xs font-medium text-white">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          Payment successful! Your fixes have been added.
+          <button type="button" onClick={() => setPaymentSuccess(false)} className="ml-2 opacity-70 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* Mobile Tab Bar - only visible on small screens */}
       <div className="flex shrink-0 border-b border-[var(--border)] bg-[var(--surface)] md:hidden">
@@ -387,5 +419,20 @@ export default function EditorPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-[var(--background)]">
+        <div className="flex items-center gap-3 text-[var(--text-tertiary)]">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-strong)] border-t-[var(--accent)]" />
+          <span className="text-sm">Loading editor...</span>
+        </div>
+      </div>
+    }>
+      <EditorPageContent />
+    </Suspense>
   );
 }

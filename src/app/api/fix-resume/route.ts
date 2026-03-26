@@ -1,9 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryAndWait } from '@/lib/blotato';
 import { stripMarkdown } from '@/lib/text-utils';
+import { verifyAuth, requireCredits, deductCredit, handleAuthError, AuthError } from '@/lib/auth-helpers';
 
 export async function POST(request: NextRequest) {
   try {
+    // ─── Auth + Credit Check ───
+    let uid: string;
+    let fixType: 'free' | 'paid';
+    try {
+      const authResult = await verifyAuth(request);
+      uid = authResult.uid;
+      const creditCheck = await requireCredits(uid);
+      if (!creditCheck.canFix) {
+        return NextResponse.json(
+          { error: 'No fixes remaining', requiresPayment: true },
+          { status: 402 }
+        );
+      }
+      fixType = creditCheck.fixType as 'free' | 'paid';
+    } catch (error) {
+      return handleAuthError(error);
+    }
+
     const body = await request.json();
 
     if (!body.resumeHTML || typeof body.resumeHTML !== 'string') {
@@ -117,8 +136,17 @@ Do not include any other text, explanation, or commentary outside these sections
       changes = ['Resume was rewritten based on the provided suggestions.'];
     }
 
+    // ─── Deduct credit on success ───
+    try {
+      await deductCredit(uid, fixType, body.resumeTitle || 'Untitled');
+    } catch (creditErr) {
+      // Log but don't fail — user already got their fix
+      console.error('[POST /api/fix-resume] Failed to deduct credit:', creditErr);
+    }
+
     return NextResponse.json({ revisedHTML, changes });
   } catch (err) {
+    if (err instanceof AuthError) return handleAuthError(err);
     const message = err instanceof Error ? err.message : 'Unknown error fixing resume';
     console.error('[POST /api/fix-resume]', message);
     return NextResponse.json({ error: message }, { status: 500 });

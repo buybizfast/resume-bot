@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryAndWait } from '@/lib/blotato';
+import { verifyAuth, requireCredits, deductCredit, handleAuthError, AuthError } from '@/lib/auth-helpers';
 
 const VALID_TONES = ['professional', 'conversational'] as const;
 type Tone = (typeof VALID_TONES)[number];
@@ -10,6 +11,24 @@ function isValidTone(value: unknown): value is Tone {
 
 export async function POST(request: NextRequest) {
   try {
+    // ─── Auth + Credit Check ───
+    let uid: string;
+    let fixType: 'free' | 'paid';
+    try {
+      const authResult = await verifyAuth(request);
+      uid = authResult.uid;
+      const creditCheck = await requireCredits(uid);
+      if (!creditCheck.canFix) {
+        return NextResponse.json(
+          { error: 'No fixes remaining', requiresPayment: true },
+          { status: 402 }
+        );
+      }
+      fixType = creditCheck.fixType as 'free' | 'paid';
+    } catch (error) {
+      return handleAuthError(error);
+    }
+
     const body = await request.json();
 
     if (!body.resumeText || typeof body.resumeText !== 'string') {
@@ -54,8 +73,16 @@ export async function POST(request: NextRequest) {
 
     const coverLetter = await queryAndWait(query);
 
+    // ─── Deduct credit on success ───
+    try {
+      await deductCredit(uid, fixType, 'Cover Letter');
+    } catch (creditErr) {
+      console.error('[POST /api/cover-letter] Failed to deduct credit:', creditErr);
+    }
+
     return NextResponse.json({ coverLetter });
   } catch (err) {
+    if (err instanceof AuthError) return handleAuthError(err);
     const message = err instanceof Error ? err.message : 'Unknown error generating cover letter';
     console.error('[POST /api/cover-letter]', message);
     return NextResponse.json({ error: message }, { status: 500 });
