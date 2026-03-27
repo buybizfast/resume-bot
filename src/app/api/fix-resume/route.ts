@@ -106,74 +106,66 @@ export async function POST(request: NextRequest) {
       .map((s: string, i: number) => `${i + 1}. ${s}`)
       .join('\n');
 
-    const query = `You are an elite ATS optimization specialist. Your single goal is to rewrite this resume so it scores 100/100 on ATS analysis. The scoring system uses 6 exact criteria — you must satisfy ALL of them completely.
+    // Extract the plain text to use as the source of truth for locked identity fields
+    const plainText: string = body.resumePlainText.slice(0, 2000);
+
+    const query = `You are an elite ATS optimization specialist. Rewrite this resume to score 100/100 on ATS analysis while keeping ALL original personal information 100% intact.
 
 === JOB DESCRIPTION ===
 ${body.jobDescription.slice(0, 2500)}
 
-=== CURRENT RESUME (HTML) ===
+=== CURRENT RESUME (HTML — rewrite this) ===
 ${body.resumeHTML.slice(0, 4500)}
 
-=== CURRENT RESUME (PLAIN TEXT) ===
-${body.resumePlainText.slice(0, 2000)}
+=== CURRENT RESUME (PLAIN TEXT — source of truth for identity fields) ===
+${plainText}
 
 === APPROVED SUGGESTIONS ===
 ${suggestionsText}
 
-=== THE 6 SCORING CRITERIA YOU MUST NAIL (35+20+15+15+10+5 = 100 pts) ===
+=== IDENTITY — COPY THESE EXACTLY, WORD FOR WORD, DO NOT ALTER ===
+The plain text above contains the real information. You MUST copy every one of these fields exactly as they appear — do not paraphrase, do not update, do not correct, do not reorder:
+- Full name
+- Email address
+- Phone number
+- Location/city
+- Every job title, company name, and employment date range
+- Every university/school name, degree title, major, and graduation year
+- Every certification, award, or license name and date
 
-**1. KEYWORD MATCH — 35 pts (most important)**
-- Extract EVERY skill, technology, tool, and keyword from the job description.
-- Weave ALL of them naturally into the resume — especially into the Professional Summary section (keywords there score 1.5x) and Work Experience bullet points.
-- Also add all missing keywords to the Skills section.
-- Do not just list them — use them in context within sentences.
+Changing ANY of the above is a critical failure. Copy them character-for-character.
 
-**2. SECTION STRUCTURE — 20 pts**
-- The resume MUST have these EXACT h2 headings (case-sensitive):
-  - "Professional Summary" (not "Summary" or "About Me")
-  - "Work Experience" (not "Experience" or "Employment History")
-  - "Skills" (not "Technical Skills" or "Core Competencies")
-  - "Education" (not "Academic Background")
-- If any section is missing or named differently, rename/add it.
+=== 6 SCORING CRITERIA (35+20+15+15+10+5 = 100 pts) ===
 
-**3. FORMATTING QUALITY — 15 pts**
-- Use ONLY <ul><li> tags for ALL bullet points — never dashes or asterisks in plain text.
-- Do NOT use <table>, <img>, <div>, <span>, or <style> tags.
-- Use only standard fonts: Arial, Calibri, Times New Roman, Georgia, Helvetica, Verdana, Garamond, Cambria.
-- Minimize or remove any style attributes with colors.
+1. KEYWORD MATCH (35 pts): Extract EVERY skill, technology, and keyword from the job description. Weave ALL of them into the Professional Summary (1.5x weight) and Work Experience bullets. Add all to Skills section too. Do not just list — integrate into sentences.
 
-**4. EXPERIENCE RELEVANCE — 15 pts**
-- Use STRONG action verbs to start every bullet point: Led, Developed, Implemented, Engineered, Designed, Built, Spearheaded, Orchestrated, Optimized, Delivered, Reduced, Increased, Managed, Launched, Automated, Streamlined, Architected, Drove, Deployed, Accelerated.
-- NEVER use weak phrases: "responsible for", "helped with", "worked on", "assisted", "participated in".
-- Ensure at least 50% of the job description's keywords appear in the Work Experience section.
+2. SECTION STRUCTURE (20 pts): Use EXACTLY these h2 headings:
+   "Professional Summary" | "Work Experience" | "Skills" | "Education"
+   Rename any non-standard headings to match these exactly.
 
-**5. MEASURABLE IMPACT — 10 pts**
-- Add AT LEAST 5 quantified achievements with specific numbers. Use formats like:
-  - Percentages: "reduced load time by 42%", "increased conversion by 28%"
-  - Dollar amounts: "generated $1.2M in revenue", "cut costs by $400K annually"
-  - Team/scale: "led a team of 12 engineers", "served 50,000+ daily active users"
-  - Multiples: "improved throughput 3x", "scaled to 10M requests per day"
-- If the original lacks numbers, invent realistic ones that fit the context.
+3. FORMATTING QUALITY (15 pts): Use <ul><li> for ALL bullets. No <table>, <img>, <div>, <span>, <style> tags. No inline color styles. No markdown asterisks (**bold** or *italic*) — use plain text only inside HTML tags.
 
-**6. COMPLETENESS — 5 pts**
-- Ensure the resume contains: email address, phone number, consistent date format (e.g., "Jan 2020 – Mar 2023"), 300–1500 words total.
-- If there's no LinkedIn URL in the resume, ADD one: "linkedin.com/in/[firstname-lastname]" using the person's name from the resume.
+4. EXPERIENCE RELEVANCE (15 pts): Start every bullet with a strong action verb: Led, Developed, Implemented, Engineered, Designed, Built, Spearheaded, Orchestrated, Optimized, Delivered, Reduced, Increased, Managed, Launched, Automated, Streamlined, Architected, Drove, Deployed, Accelerated. Never use: "responsible for", "helped", "worked on", "assisted", "participated".
 
-=== HARD RULES ===
-- Keep the person's REAL name, job titles, company names, dates, and education exactly as-is.
-- Do NOT invent new jobs, companies, or degrees.
-- Output must be clean semantic HTML compatible with TipTap editor (h1, h2, h3, p, ul, li only).
-- The Professional Summary must be a compelling 3-4 sentence paragraph that includes the job title from the job description AND at least 5 keywords from the job description.
+5. MEASURABLE IMPACT (10 pts): Add AT LEAST 5 quantified results with specific numbers — percentages, dollar amounts, team sizes, or multiples. If original lacks numbers, add realistic ones that fit the role.
+
+6. COMPLETENESS (5 pts): Keep email, phone, consistent date format (e.g. "Jan 2020 - Mar 2023"), 300-1500 words. If no LinkedIn URL exists, add: "linkedin.com/in/[firstname-lastname]".
+
+=== ABSOLUTE OUTPUT RULES ===
+- Pure HTML only — no markdown, no **, no *, no __, no backticks anywhere in the output
+- Only use tags: h1, h2, h3, p, ul, li, a, br
+- Professional Summary: 3-4 sentences, includes job title from JD and 5+ JD keywords
+- Do NOT invent new jobs, companies, degrees, or certifications
 
 === OUTPUT FORMAT ===
-Respond with ONLY these two sections:
+Respond with ONLY:
 
 REVISED_HTML_START
-(complete rewritten resume HTML)
+(complete rewritten resume HTML — no markdown)
 REVISED_HTML_END
 
 CHANGES_START
-- (one line per change made)
+- (one line per change, plain text only)
 CHANGES_END`;
 
     const rawResult = await queryAndWait(query, 60, 3000);
@@ -204,6 +196,14 @@ CHANGES_END`;
       revisedHTML = rawResult.trim();
       changes = ['Resume was rewritten based on the provided suggestions.'];
     }
+
+    // Strip any markdown asterisks the AI slipped into the HTML
+    // **bold** → bold, *italic* → italic
+    revisedHTML = revisedHTML
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
+      .replace(/_([^_]+)_/g, '$1');
 
     // ─── Deduct credit on success (skip for anonymous users) ───
     if (uid && fixType !== 'anonymous') {
