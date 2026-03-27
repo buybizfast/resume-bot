@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import LoginModal from './LoginModal';
 
 export default function UserMenu() {
   const { user, isLoading, signOut } = useAuth();
+  const router = useRouter();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -89,6 +91,7 @@ export default function UserMenu() {
             onClick={async () => {
               setShowDropdown(false);
               await signOut();
+              router.push('/');
             }}
             className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--background)]"
           >
