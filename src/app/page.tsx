@@ -80,16 +80,7 @@ export default function LandingPage() {
       <nav className="border-b border-[var(--border)] bg-[var(--surface)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]">
-              <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="10" rx="2" />
-                <circle cx="12" cy="5" r="2" />
-                <path d="M12 7v4" />
-                <line x1="8" y1="16" x2="8" y2="16" strokeWidth="3" />
-                <line x1="12" y1="16" x2="12" y2="16" strokeWidth="3" />
-                <line x1="16" y1="16" x2="16" y2="16" strokeWidth="3" />
-              </svg>
-            </div>
+            <Image src="/jacqbots-logo.png" alt="JacqBots" width={36} height={36} className="rounded-lg" />
             <div>
               <div className="font-[family-name:var(--font-display)] text-lg leading-tight text-[var(--text-primary)]">Resume Bot</div>
               <div className="font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.15em] text-[var(--accent)]">by JacqBots</div>

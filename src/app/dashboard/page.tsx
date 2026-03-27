@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useResumeStore } from '@/hooks/useResumeStore';
@@ -292,16 +293,7 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2.5">
                 {/* JacqBots logo mark */}
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)]">
-                  <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="10" rx="2" />
-                    <circle cx="12" cy="5" r="2" />
-                    <path d="M12 7v4" />
-                    <line x1="8" y1="16" x2="8" y2="16" strokeWidth="3" />
-                    <line x1="12" y1="16" x2="12" y2="16" strokeWidth="3" />
-                    <line x1="16" y1="16" x2="16" y2="16" strokeWidth="3" />
-                  </svg>
-                </div>
+                <Image src="/jacqbots-logo.png" alt="JacqBots" width={40} height={40} className="rounded-lg" />
                 <div>
                   <h1 className="font-[family-name:var(--font-display)] text-2xl tracking-tight text-[var(--text-primary)] sm:text-3xl">
                     Resume Bot
