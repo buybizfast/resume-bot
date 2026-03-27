@@ -90,8 +90,8 @@ function TemplateModal({
         onClick={onClose}
       />
 
-      <div className="relative z-10 mx-4 w-full max-w-2xl rounded-xl bg-[var(--surface)] p-6 shadow-[var(--shadow-lg)]">
-        <div className="mb-6 flex items-center justify-between">
+      <div className="relative z-10 mx-4 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-[var(--surface)] shadow-[var(--shadow-lg)]">
+        <div className="flex shrink-0 items-center justify-between p-6 pb-4">
           <div className="flex items-center gap-2">
             {showImport && (
               <button
@@ -119,6 +119,7 @@ function TemplateModal({
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
         {showImport ? (
           <div>
             <p className="mb-4 text-sm text-[var(--text-secondary)]">
@@ -190,6 +191,7 @@ function TemplateModal({
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

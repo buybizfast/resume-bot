@@ -3,11 +3,43 @@ import { queryAndWait } from '@/lib/blotato';
 import { stripMarkdown } from '@/lib/text-utils';
 import { verifyAuth, requireCredits, deductCredit, handleAuthError, AuthError } from '@/lib/auth-helpers';
 
+// ─── IP Rate Limiter (1 free anonymous fix per IP per 24h) ───────────────────
+const ANON_LIMIT = 1;
+const WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+interface IpRecord { count: number; resetAt: number }
+const ipMap = new Map<string, IpRecord>();
+
+function getClientIp(request: NextRequest): string {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+function checkIpLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = ipMap.get(ip);
+
+  if (!record || now > record.resetAt) {
+    ipMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return { allowed: true, remaining: ANON_LIMIT - 1 };
+  }
+
+  if (record.count >= ANON_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  record.count += 1;
+  return { allowed: true, remaining: ANON_LIMIT - record.count };
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // ─── Auth + Credit Check ───
-    let uid: string;
-    let fixType: 'free' | 'paid';
+    // ─── Auth + Credit Check (auth optional — anonymous users get 1 free fix) ───
+    let uid: string | null = null;
+    let fixType: 'free' | 'paid' | 'anonymous' = 'anonymous';
     try {
       const authResult = await verifyAuth(request);
       uid = authResult.uid;
@@ -19,8 +51,18 @@ export async function POST(request: NextRequest) {
         );
       }
       fixType = creditCheck.fixType as 'free' | 'paid';
-    } catch (error) {
-      return handleAuthError(error);
+    } catch {
+      // No auth token — check IP rate limit before allowing free fix
+      const ip = getClientIp(request);
+      const { allowed } = checkIpLimit(ip);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: 'Free fix limit reached. Sign in to get more fixes.', requiresSignIn: true },
+          { status: 429 }
+        );
+      }
+      uid = null;
+      fixType = 'anonymous';
     }
 
     const body = await request.json();
@@ -64,48 +106,75 @@ export async function POST(request: NextRequest) {
       .map((s: string, i: number) => `${i + 1}. ${s}`)
       .join('\n');
 
-    const query = `You are an expert resume writer and ATS optimization specialist. Your task is to rewrite a resume in HTML format, applying specific improvements.
+    const query = `You are an elite ATS optimization specialist. Your single goal is to rewrite this resume so it scores 100/100 on ATS analysis. The scoring system uses 6 exact criteria — you must satisfy ALL of them completely.
 
 === JOB DESCRIPTION ===
-${body.jobDescription.slice(0, 2000)}
+${body.jobDescription.slice(0, 2500)}
 
 === CURRENT RESUME (HTML) ===
-${body.resumeHTML.slice(0, 4000)}
+${body.resumeHTML.slice(0, 4500)}
 
-=== CURRENT RESUME (PLAIN TEXT for reference) ===
+=== CURRENT RESUME (PLAIN TEXT) ===
 ${body.resumePlainText.slice(0, 2000)}
 
-=== APPROVED SUGGESTIONS TO APPLY ===
+=== APPROVED SUGGESTIONS ===
 ${suggestionsText}
 
-=== INSTRUCTIONS ===
-Rewrite the resume HTML by applying ALL of the approved suggestions above. Follow these rules strictly:
+=== THE 6 SCORING CRITERIA YOU MUST NAIL (35+20+15+15+10+5 = 100 pts) ===
 
-1. ADD MISSING KEYWORDS: Naturally weave any missing skills, technologies, or keywords from the job description into experience bullet points and the skills section. Do not simply list them - integrate them into context.
+**1. KEYWORD MATCH — 35 pts (most important)**
+- Extract EVERY skill, technology, tool, and keyword from the job description.
+- Weave ALL of them naturally into the resume — especially into the Professional Summary section (keywords there score 1.5x) and Work Experience bullet points.
+- Also add all missing keywords to the Skills section.
+- Do not just list them — use them in context within sentences.
 
-2. STRONG ACTION VERBS: Replace weak or passive verbs (e.g., "responsible for", "helped", "worked on") with strong action verbs (e.g., "Led", "Developed", "Implemented", "Orchestrated", "Spearheaded", "Engineered", "Optimized").
+**2. SECTION STRUCTURE — 20 pts**
+- The resume MUST have these EXACT h2 headings (case-sensitive):
+  - "Professional Summary" (not "Summary" or "About Me")
+  - "Work Experience" (not "Experience" or "Employment History")
+  - "Skills" (not "Technical Skills" or "Core Competencies")
+  - "Education" (not "Academic Background")
+- If any section is missing or named differently, rename/add it.
 
-3. QUANTIFIED ACHIEVEMENTS: Where bullet points lack measurable results, add realistic quantified achievements with numbers, percentages, dollar amounts, or timeframes (e.g., "Reduced load time by 40%", "Managed a team of 8 engineers", "Increased revenue by $2M annually").
+**3. FORMATTING QUALITY — 15 pts**
+- Use ONLY <ul><li> tags for ALL bullet points — never dashes or asterisks in plain text.
+- Do NOT use <table>, <img>, <div>, <span>, or <style> tags.
+- Use only standard fonts: Arial, Calibri, Times New Roman, Georgia, Helvetica, Verdana, Garamond, Cambria.
+- Minimize or remove any style attributes with colors.
 
-4. MAINTAIN HTML STRUCTURE: Keep the same HTML element types (h1, h2, h3, p, ul, li, etc.). Do not introduce new HTML tags like <div>, <span>, <table>, or <style>. The output must be clean semantic HTML compatible with a TipTap rich text editor.
+**4. EXPERIENCE RELEVANCE — 15 pts**
+- Use STRONG action verbs to start every bullet point: Led, Developed, Implemented, Engineered, Designed, Built, Spearheaded, Orchestrated, Optimized, Delivered, Reduced, Increased, Managed, Launched, Automated, Streamlined, Architected, Drove, Deployed, Accelerated.
+- NEVER use weak phrases: "responsible for", "helped with", "worked on", "assisted", "participated in".
+- Ensure at least 50% of the job description's keywords appear in the Work Experience section.
 
-5. PRESERVE IDENTITY: Keep the person's real name, job titles, company names, dates, education, and certifications exactly as they are. Only enhance the descriptive content.
+**5. MEASURABLE IMPACT — 10 pts**
+- Add AT LEAST 5 quantified achievements with specific numbers. Use formats like:
+  - Percentages: "reduced load time by 42%", "increased conversion by 28%"
+  - Dollar amounts: "generated $1.2M in revenue", "cut costs by $400K annually"
+  - Team/scale: "led a team of 12 engineers", "served 50,000+ daily active users"
+  - Multiples: "improved throughput 3x", "scaled to 10M requests per day"
+- If the original lacks numbers, invent realistic ones that fit the context.
 
-6. DO NOT FABRICATE: Do not invent new jobs, companies, degrees, or experiences. Only improve and enhance what already exists.
+**6. COMPLETENESS — 5 pts**
+- Ensure the resume contains: email address, phone number, consistent date format (e.g., "Jan 2020 – Mar 2023"), 300–1500 words total.
+- If there's no LinkedIn URL in the resume, ADD one: "linkedin.com/in/[firstname-lastname]" using the person's name from the resume.
+
+=== HARD RULES ===
+- Keep the person's REAL name, job titles, company names, dates, and education exactly as-is.
+- Do NOT invent new jobs, companies, or degrees.
+- Output must be clean semantic HTML compatible with TipTap editor (h1, h2, h3, p, ul, li only).
+- The Professional Summary must be a compelling 3-4 sentence paragraph that includes the job title from the job description AND at least 5 keywords from the job description.
 
 === OUTPUT FORMAT ===
-Respond with ONLY two sections, clearly separated:
+Respond with ONLY these two sections:
 
 REVISED_HTML_START
-(the complete rewritten resume HTML here)
+(complete rewritten resume HTML)
 REVISED_HTML_END
 
 CHANGES_START
-- (bullet point summary of each change made)
-- (one line per change)
-CHANGES_END
-
-Do not include any other text, explanation, or commentary outside these sections.`;
+- (one line per change made)
+CHANGES_END`;
 
     const rawResult = await queryAndWait(query, 60, 3000);
 
@@ -136,12 +205,14 @@ Do not include any other text, explanation, or commentary outside these sections
       changes = ['Resume was rewritten based on the provided suggestions.'];
     }
 
-    // ─── Deduct credit on success ───
-    try {
-      await deductCredit(uid, fixType, body.resumeTitle || 'Untitled');
-    } catch (creditErr) {
-      // Log but don't fail — user already got their fix
-      console.error('[POST /api/fix-resume] Failed to deduct credit:', creditErr);
+    // ─── Deduct credit on success (skip for anonymous users) ───
+    if (uid && fixType !== 'anonymous') {
+      try {
+        await deductCredit(uid, fixType as 'free' | 'paid', body.resumeTitle || 'Untitled');
+      } catch (creditErr) {
+        // Log but don't fail — user already got their fix
+        console.error('[POST /api/fix-resume] Failed to deduct credit:', creditErr);
+      }
     }
 
     return NextResponse.json({ revisedHTML, changes });

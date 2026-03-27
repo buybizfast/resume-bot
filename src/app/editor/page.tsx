@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useResumeStore } from '@/hooks/useResumeStore';
+import { useAuth } from '@/hooks/useAuth';
+import { useATSScore } from '@/hooks/useATSScore';
 import JobDescriptionInput from '@/components/job/JobDescriptionInput';
 import ResumeEditor from '@/components/editor/ResumeEditor';
 import ResumeUpload from '@/components/editor/ResumeUpload';
@@ -10,6 +12,7 @@ import ATSScorePanel from '@/components/scoring/ATSScorePanel';
 import DidYouKnowCard from '@/components/did-you-know/DidYouKnowCard';
 import UserMenu from '@/components/auth/UserMenu';
 import CreditsBadge from '@/components/payments/CreditsBadge';
+import LoginModal from '@/components/auth/LoginModal';
 
 function PanelToggle({
   side,
@@ -65,8 +68,14 @@ function EditorPageContent() {
   const [editorKey, setEditorKey] = useState(0);
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showScoreGate, setShowScoreGate] = useState(false);
+  const pendingExportRef = useRef(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
+
+  const { user } = useAuth();
+  const { score } = useATSScore();
 
   // Handle payment success redirect from Stripe
   useEffect(() => {
@@ -157,16 +166,16 @@ function EditorPageContent() {
     }
   }, [isEditingTitle]);
 
-  const handleExport = useCallback(async () => {
-    if (!activeResume) return;
+  const doExportRef = useRef<() => void>(() => {});
 
+  const doExport = useCallback(() => {
+    if (!activeResume) return;
     const blob = new Blob(
       [
         `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeResume.title}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.5}h1{font-size:1.8rem;margin-bottom:0.5rem}h2{font-size:1.3rem;border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:1.5rem}h3{font-size:1.1rem;margin-top:1rem}ul{padding-left:1.5rem}li{margin-bottom:4px}</style></head><body>${activeResume.html}</body></html>`,
       ],
       { type: 'text/html' }
     );
-
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -176,6 +185,34 @@ function EditorPageContent() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }, [activeResume]);
+
+  // Keep ref in sync so the sign-in effect always uses the latest doExport
+  doExportRef.current = doExport;
+
+  // Auto-export after user signs in via the export login gate
+  useEffect(() => {
+    if (user && pendingExportRef.current) {
+      pendingExportRef.current = false;
+      setShowLoginModal(false);
+      doExportRef.current();
+    }
+  }, [user]);
+
+  const handleExport = useCallback(() => {
+    if (!activeResume) return;
+    // Gate: must reach 100% ATS score when a job description is active
+    if (score !== null && score.totalScore < 100) {
+      setShowScoreGate(true);
+      return;
+    }
+    // Gate: must be signed in
+    if (!user) {
+      pendingExportRef.current = true;
+      setShowLoginModal(true);
+      return;
+    }
+    doExport();
+  }, [activeResume, score, user, doExport]);
 
   if (!hasMounted || !activeResume) {
     return (
@@ -326,6 +363,50 @@ function EditorPageContent() {
           </div>
         </div>
       )}
+
+      {/* Score Gate Modal — shown when score < 100% */}
+      {showScoreGate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-xl bg-[var(--surface)] p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--gold-light)]">
+                <svg className="h-5 w-5 text-[var(--gold)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                  <path d="M12 8v4" />
+                  <path d="M12 16h.01" />
+                </svg>
+              </div>
+              <button type="button" onClick={() => setShowScoreGate(false)} className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--background)]">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <h2 className="mb-2 text-lg font-bold text-[var(--text-primary)]">Almost there!</h2>
+            <p className="mb-1 text-sm text-[var(--text-secondary)]">
+              Your resume is at <span className="font-bold text-[var(--gold)]">{score?.totalScore ?? 0}%</span>. Reach <span className="font-bold text-[var(--accent)]">100%</span> to unlock the export.
+            </p>
+            <p className="mb-5 text-xs text-[var(--text-tertiary)]">
+              Use the &ldquo;Fix My Resume&rdquo; button in the ATS Score panel — our AI will rewrite it to a perfect score in one shot.
+            </p>
+            <button
+              type="button"
+              onClick={() => { setShowScoreGate(false); setMobileTab('score'); }}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+              </svg>
+              Fix My Resume Now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal — shown after reaching 100% */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message="Sign in to download your optimized resume"
+      />
 
       {/* ─── MOBILE LAYOUT ─── */}
       {/* Job Description - mobile */}
