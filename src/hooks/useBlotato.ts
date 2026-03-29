@@ -1,17 +1,23 @@
 'use client';
 import { useState, useCallback } from 'react';
+import { useAuthContext } from '@/components/auth/AuthProvider';
 
 export function useBlotato() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuthContext();
 
   const callAPI = useCallback(async (endpoint: string, body: Record<string, unknown>) => {
     setLoading(true);
     setError(null);
     try {
+      const token = user ? await user.getIdToken() : null;
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
@@ -27,7 +33,7 @@ export function useBlotato() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const optimize = useCallback((resumeText: string, jobDescription: string) => {
     return callAPI('/api/optimize', { resumeText, jobDescription });
