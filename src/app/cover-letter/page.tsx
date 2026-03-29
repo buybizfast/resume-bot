@@ -4,6 +4,8 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useResumeStore } from '@/hooks/useResumeStore';
 import { useBlotato } from '@/hooks/useBlotato';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import LoginModal from '@/components/auth/LoginModal';
 import { stripMarkdown } from '@/lib/text-utils';
 import { exportToDocx, exportToPlainText } from '@/lib/export';
 
@@ -11,6 +13,8 @@ export default function CoverLetterPage() {
   const router = useRouter();
   const resumes = useResumeStore((state) => state.resumes);
   const { loading, error, generateCoverLetter } = useBlotato();
+  const { user } = useAuthContext();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const [selectedResumeId, setSelectedResumeId] = useState<string>(
     resumes.length > 0 ? resumes[0].id : ''
@@ -24,6 +28,10 @@ export default function CoverLetterPage() {
   const selectedResume = resumes.find((r) => r.id === selectedResumeId);
 
   const handleGenerate = useCallback(async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
     if (!selectedResume) return;
     if (!jobDescription.trim()) return;
     if (!companyName.trim()) return;
@@ -35,17 +43,15 @@ export default function CoverLetterPage() {
         companyName,
         tone
       );
-      if (result && typeof result === 'object' && 'result' in result) {
-        setGeneratedLetter(stripMarkdown((result as Record<string, string>).result));
+      if (result && typeof result === 'object' && 'coverLetter' in result) {
+        setGeneratedLetter(stripMarkdown((result as Record<string, string>).coverLetter));
       } else if (typeof result === 'string') {
         setGeneratedLetter(stripMarkdown(result));
-      } else if (result) {
-        setGeneratedLetter(stripMarkdown(JSON.stringify(result)));
       }
     } catch {
       // Error state handled by useBlotato
     }
-  }, [selectedResume, jobDescription, companyName, tone, generateCoverLetter]);
+  }, [user, selectedResume, jobDescription, companyName, tone, generateCoverLetter]);
 
   const handleCopy = useCallback(async () => {
     if (!generatedLetter) return;
@@ -429,6 +435,12 @@ export default function CoverLetterPage() {
           </div>
         </div>
       </div>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message="Sign in to generate your cover letter"
+      />
     </div>
   );
 }
