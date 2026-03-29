@@ -83,7 +83,7 @@ export default function LandingPage() {
             <Image src="/jacqbots-logo.png" alt="JacqBots" width={36} height={36} className="rounded-lg" />
             <div>
               <div className="font-[family-name:var(--font-display)] text-lg leading-tight text-[var(--text-primary)]">Resume Bot</div>
-              <div className="font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.15em] text-[var(--accent)]">by JacqBots</div>
+              <a href="https://www.rebrandmint.com/" target="_blank" rel="noopener noreferrer" className="font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.15em] text-[var(--accent)] hover:underline">by JacqBots</a>
             </div>
           </div>
           <div className="flex items-center gap-2">
