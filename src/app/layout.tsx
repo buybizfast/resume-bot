@@ -29,6 +29,20 @@ export const metadata: Metadata = {
   verification: {
     google: "f9E_4pOPuHIEUAoWIl327YyyiZ4OlT-DKDNaHo0VikM",
   },
+  openGraph: {
+    title: "Resume Bot - Optimize Your Resume for ATS",
+    description: "AI-powered resume optimization tool. Get real-time ATS scoring, tailored cover letters, job scam detection, and career tips.",
+    url: "https://resumebots.co",
+    siteName: "Resume Bot",
+    images: [{ url: "https://resumebots.co/jacqbots-logo.png", width: 512, height: 512 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Resume Bot - Optimize Your Resume for ATS",
+    description: "AI-powered resume optimization tool. Get real-time ATS scoring, tailored cover letters, job scam detection, and career tips.",
+    images: ["https://resumebots.co/jacqbots-logo.png"],
+  },
 };
 
 export default function RootLayout({
