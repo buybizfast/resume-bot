@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, DM_Sans, DM_Mono } from "next/font/google";
+import Script from "next/script";
 import AuthProvider from "@/components/auth/AuthProvider";
 import "./globals.css";
 
@@ -25,6 +26,9 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "Resume Bot - Optimize Your Resume for ATS",
   description: "AI-powered resume optimization tool. Get real-time ATS scoring, tailored cover letters, job scam detection, and career tips.",
+  verification: {
+    google: "f9E_4pOPuHIEUAoWIl327YyyiZ4OlT-DKDNaHo0VikM",
+  },
 };
 
 export default function RootLayout({
@@ -34,6 +38,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-94CVDCHKHZ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-94CVDCHKHZ');
+          `}
+        </Script>
+      </head>
       <body
         className={`${instrumentSerif.variable} ${dmSans.variable} ${dmMono.variable} antialiased`}
       >
