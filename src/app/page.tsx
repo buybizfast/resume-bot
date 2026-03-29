@@ -284,14 +284,18 @@ export default function LandingPage() {
           <div className="flex items-center gap-2.5">
             <Image src="/jacqbots-logo.png" alt="JacqBots" width={28} height={28} className="rounded-md" />
             <span className="font-[family-name:var(--font-display)] text-sm text-[var(--text-primary)]">Resume Bot</span>
-            <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)]">by JacqBots</span>
+            <a href="https://www.rebrandmint.com/" target="_blank" rel="noopener noreferrer" className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]">by JacqBots</a>
           </div>
           <div className="flex gap-6">
             {[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Scam Check', href: '/scam-check' }, { label: 'Cover Letter', href: '/cover-letter' }, { label: 'Blog', href: '/blog' }].map(({ label, href }) => (
               <Link key={label} href={href} className="text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]">{label}</Link>
             ))}
           </div>
-          <div className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)]">© 2026 JacqBots</div>
+          <div className="flex items-center gap-3">
+            <div className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)]">© 2026 JacqBots</div>
+            <span className="text-[var(--border)]">·</span>
+            <a href="https://www.rebrandmint.com/#contact" target="_blank" rel="noopener noreferrer" className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]">Want AI that works while you sleep? →</a>
+          </div>
         </div>
       </footer>
     </div>
