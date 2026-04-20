@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, getUserProfile, handleAuthError } from '@/lib/auth-helpers';
+import { requireAdmin, handleAuthError } from '@/lib/auth-helpers';
 import { adminDb } from '@/lib/firebase/admin';
 
 export async function GET(request: NextRequest) {
   try {
-    const { uid } = await verifyAuth(request);
-    const profile = await getUserProfile(uid);
-    if (!profile.isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    await requireAdmin(request);
 
     const snap = await adminDb
       .collection('payments')

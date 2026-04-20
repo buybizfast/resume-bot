@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, getUserProfile, handleAuthError } from '@/lib/auth-helpers';
+import { requireAdmin, handleAuthError } from '@/lib/auth-helpers';
 import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function GET(request: NextRequest) {
   try {
-    const { uid } = await verifyAuth(request);
-    const profile = await getUserProfile(uid);
-    if (!profile.isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    await requireAdmin(request);
 
     const searchParam = request.nextUrl.searchParams.get('search') || '';
     let query = adminDb.collection('users').orderBy('createdAt', 'desc').limit(50);
 
-    // If searching by email, use a different query
     if (searchParam) {
       query = adminDb
         .collection('users')
@@ -39,11 +34,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { uid } = await verifyAuth(request);
-    const profile = await getUserProfile(uid);
-    if (!profile.isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    await requireAdmin(request);
 
     const body = await request.json();
     const { userId, fixesRemaining, isAdmin } = body;

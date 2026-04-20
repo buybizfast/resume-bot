@@ -4,6 +4,25 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 // ─── Auth Verification ───────────────────────────────────────────
 
+export async function requireAdmin(request: NextRequest): Promise<{ uid: string; email: string }> {
+  const result = await verifyAuth(request);
+  const adminEmails = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (adminEmails.includes(result.email.toLowerCase())) {
+    return result;
+  }
+
+  const profile = await getUserProfile(result.uid);
+  if (!profile.isAdmin) {
+    throw new AuthError('Forbidden', 403);
+  }
+
+  return result;
+}
+
 export async function verifyAuth(request: NextRequest): Promise<{ uid: string; email: string }> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {

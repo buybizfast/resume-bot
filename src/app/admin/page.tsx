@@ -62,6 +62,7 @@ export default function AdminPage() {
   const { user, isLoading: authLoading, getIdToken } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   // Data states
   const [stats, setStats] = useState<Stats | null>(null);
@@ -104,14 +105,20 @@ export default function AdminPage() {
         const res = await fetchWithAuth('/api/admin/stats');
         if (res.status === 403) {
           setIsAdmin(false);
-          router.replace('/');
+          setAdminError('Access denied. Your account is not marked as admin.');
+          return;
+        }
+        if (!res.ok) {
+          setIsAdmin(false);
+          setAdminError(`Server error ${res.status} — check Vercel logs.`);
           return;
         }
         setIsAdmin(true);
         const data = await res.json();
         setStats(data);
-      } catch {
-        router.replace('/');
+      } catch (err) {
+        setIsAdmin(false);
+        setAdminError(err instanceof Error ? err.message : 'Failed to connect to admin API.');
       }
     })();
   }, [authLoading, user, router, fetchWithAuth]);
@@ -226,12 +233,24 @@ export default function AdminPage() {
     }
   }, [fetchWithAuth]);
 
-  if (authLoading || isAdmin === null) {
+  if (authLoading || (isAdmin === null && !adminError)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
         <div className="flex items-center gap-3 text-[var(--text-tertiary)]">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
           <span className="text-sm">Loading admin panel...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (adminError || isAdmin === false) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+        <div className="max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
+          <p className="mb-2 text-sm font-semibold text-[var(--danger)]">Admin Access Denied</p>
+          <p className="mb-4 text-xs text-[var(--text-secondary)]">{adminError ?? 'You do not have permission to view this page.'}</p>
+          <a href="/dashboard" className="text-xs text-[var(--accent)] hover:underline">Back to Dashboard</a>
         </div>
       </div>
     );

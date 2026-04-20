@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, getUserProfile, handleAuthError, AuthError } from '@/lib/auth-helpers';
+import { requireAdmin, handleAuthError } from '@/lib/auth-helpers';
 import { adminDb } from '@/lib/firebase/admin';
 
 export async function GET(request: NextRequest) {
   try {
-    const { uid } = await verifyAuth(request);
-    const profile = await getUserProfile(uid);
-
-    if (!profile.isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    await requireAdmin(request);
 
     // Get counts in parallel
     const [usersSnap, fixesSnap, paymentsSnap, couponsSnap] = await Promise.all([

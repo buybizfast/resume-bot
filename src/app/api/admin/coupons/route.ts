@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, getUserProfile, handleAuthError } from '@/lib/auth-helpers';
+import { requireAdmin, handleAuthError } from '@/lib/auth-helpers';
 import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function GET(request: NextRequest) {
   try {
-    const { uid } = await verifyAuth(request);
-    const profile = await getUserProfile(uid);
-    if (!profile.isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    await requireAdmin(request);
 
     const snap = await adminDb.collection('couponCodes').orderBy('createdAt', 'desc').limit(100).get();
     const coupons = snap.docs.map((doc) => ({
@@ -27,11 +23,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { uid } = await verifyAuth(request);
-    const profile = await getUserProfile(uid);
-    if (!profile.isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { uid } = await requireAdmin(request);
 
     const body = await request.json();
     const { code, freeFixesGranted, maxRedemptions, expiresAt } = body;
@@ -42,7 +34,6 @@ export async function POST(request: NextRequest) {
 
     const normalizedCode = code.trim().toUpperCase();
 
-    // Check for duplicates
     const existing = await adminDb
       .collection('couponCodes')
       .where('code', '==', normalizedCode)
@@ -74,11 +65,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { uid } = await verifyAuth(request);
-    const profile = await getUserProfile(uid);
-    if (!profile.isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    await requireAdmin(request);
 
     const body = await request.json();
     const { couponId, isActive } = body;
