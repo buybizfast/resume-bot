@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     // Extract the plain text to use as the source of truth for locked identity fields
     const plainText: string = body.resumePlainText.slice(0, 2000);
 
-    const query = `You are an elite ATS optimization specialist. Rewrite this resume to score 100/100 on ATS analysis while keeping ALL original personal information 100% intact.
+    const query = `You are an elite ATS optimization specialist. Rewrite this resume to maximize ATS compatibility and keyword alignment for the job description below, while keeping ALL original personal information 100% intact.
 
 === JOB DESCRIPTION ===
 ${body.jobDescription.slice(0, 2500)}
@@ -135,21 +135,21 @@ The plain text above contains the real information. You MUST copy every one of t
 
 Changing ANY of the above is a critical failure. Copy them character-for-character.
 
-=== 6 SCORING CRITERIA (35+20+15+15+10+5 = 100 pts) ===
+=== 6 OPTIMIZATION CRITERIA ===
 
-1. KEYWORD MATCH (35 pts): Extract EVERY skill, technology, and keyword from the job description. Weave ALL of them into the Professional Summary (1.5x weight) and Work Experience bullets. Add all to Skills section too. Do not just list — integrate into sentences.
+1. KEYWORD MATCH (highest priority): Extract EVERY skill, technology, and keyword from the job description. Weave ALL of them into the Professional Summary (1.5x weight) and Work Experience bullets. Add all to Skills section too. Do not just list — integrate into sentences.
 
-2. SECTION STRUCTURE (20 pts): Use EXACTLY these h2 headings:
+2. SECTION STRUCTURE: Use EXACTLY these h2 headings:
    "Professional Summary" | "Work Experience" | "Skills" | "Education"
    Rename any non-standard headings to match these exactly.
 
-3. FORMATTING QUALITY (15 pts): Use <ul><li> for ALL bullets. No <table>, <img>, <div>, <span>, <style> tags. No inline color styles. No markdown asterisks (**bold** or *italic*) — use plain text only inside HTML tags.
+3. FORMATTING QUALITY: Use <ul><li> for ALL bullets. No <table>, <img>, <div>, <span>, <style> tags. No inline color styles. No markdown asterisks (**bold** or *italic*) — use plain text only inside HTML tags.
 
-4. EXPERIENCE RELEVANCE (15 pts): Start every bullet with a strong action verb: Led, Developed, Implemented, Engineered, Designed, Built, Spearheaded, Orchestrated, Optimized, Delivered, Reduced, Increased, Managed, Launched, Automated, Streamlined, Architected, Drove, Deployed, Accelerated. Never use: "responsible for", "helped", "worked on", "assisted", "participated".
+4. EXPERIENCE RELEVANCE: Start every bullet with a strong action verb: Led, Developed, Implemented, Engineered, Designed, Built, Spearheaded, Orchestrated, Optimized, Delivered, Reduced, Increased, Managed, Launched, Automated, Streamlined, Architected, Drove, Deployed, Accelerated. Never use: "responsible for", "helped", "worked on", "assisted", "participated".
 
-5. MEASURABLE IMPACT (10 pts): Add AT LEAST 5 quantified results with specific numbers — percentages, dollar amounts, team sizes, or multiples. If original lacks numbers, add realistic ones that fit the role.
+5. MEASURABLE IMPACT: Add AT LEAST 5 quantified results with specific numbers — percentages, dollar amounts, team sizes, or multiples. If original lacks numbers, add realistic ones that fit the role.
 
-6. COMPLETENESS (5 pts): Keep email, phone, consistent date format (e.g. "Jan 2020 - Mar 2023"), 300-1500 words. If no LinkedIn URL exists, add: "linkedin.com/in/[firstname-lastname]".
+6. COMPLETENESS: Keep email, phone, consistent date format (e.g. "Jan 2020 - Mar 2023"), 300-1500 words. If no LinkedIn URL exists, add: "linkedin.com/in/[firstname-lastname]".
 
 === ABSOLUTE OUTPUT RULES ===
 - Pure HTML only — no markdown, no **, no *, no __, no backticks anywhere in the output
@@ -191,9 +191,18 @@ CHANGES_END`;
         .filter((line: string) => line.length > 0);
     }
 
-    // Fallback: if parsing failed, treat the whole response as HTML
+    // If parsing failed, validate the raw response actually looks like HTML before using it
     if (!revisedHTML) {
-      revisedHTML = rawResult.trim();
+      const trimmed = rawResult.trim();
+      const looksLikeHTML = trimmed.includes('<h1') || trimmed.includes('<h2') || trimmed.includes('<p>') || trimmed.includes('<ul');
+      if (!looksLikeHTML) {
+        console.error('[POST /api/fix-resume] AI returned non-HTML response:', trimmed.slice(0, 300));
+        return NextResponse.json(
+          { error: 'The AI was unable to rewrite your resume this time. Please try again.' },
+          { status: 500 }
+        );
+      }
+      revisedHTML = trimmed;
       changes = ['Resume was rewritten based on the provided suggestions.'];
     }
 
