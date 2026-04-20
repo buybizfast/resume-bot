@@ -200,8 +200,8 @@ function EditorPageContent() {
 
   const handleExport = useCallback(() => {
     if (!activeResume) return;
-    // Gate: must reach 100% ATS score when a job description is active
-    if (score !== null && score.totalScore < 100) {
+    // Gate: must reach 85% ATS score when a job description is active
+    if (score !== null && score.totalScore < 85) {
       setShowScoreGate(true);
       return;
     }
@@ -382,10 +382,10 @@ function EditorPageContent() {
             </div>
             <h2 className="mb-2 text-lg font-bold text-[var(--text-primary)]">Almost there!</h2>
             <p className="mb-1 text-sm text-[var(--text-secondary)]">
-              Your resume is at <span className="font-bold text-[var(--gold)]">{score?.totalScore ?? 0}%</span>. Reach <span className="font-bold text-[var(--accent)]">100%</span> to unlock the export.
+              Your resume is at <span className="font-bold text-[var(--gold)]">{score?.totalScore ?? 0}%</span>. Reach <span className="font-bold text-[var(--accent)]">85%</span> to unlock the export.
             </p>
             <p className="mb-5 text-xs text-[var(--text-tertiary)]">
-              Use the &ldquo;Fix My Resume&rdquo; button in the ATS Score panel — our AI will rewrite it to a perfect score in one shot.
+              Use the &ldquo;Fix My Resume&rdquo; button in the ATS Score panel to improve your score.
             </p>
             <button
               type="button"
