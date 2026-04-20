@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractFromUrl } from '@/lib/blotato';
 
+async function fetchViaJina(url: string): Promise<string> {
+  const response = await fetch(`https://r.jina.ai/${url}`, {
+    headers: { 'Accept': 'text/plain' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Jina Reader failed: ${response.status}`);
+  }
+
+  const text = (await response.text()).trim();
+  if (text.length < 100) {
+    throw new Error('Jina Reader returned insufficient content.');
+  }
+  return text;
+}
+
 async function fetchUrlDirectly(url: string): Promise<string> {
   const response = await fetch(url, {
     headers: {
@@ -58,17 +74,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try Blotato first, fall back to direct fetch
-    let content: string;
+    // Fallback chain: Blotato (if configured) → direct fetch → Jina Reader
+    let content: string | undefined;
+    const errors: string[] = [];
+
     if (process.env.BLOTATO_API_KEY) {
       try {
         content = await extractFromUrl(body.url);
-      } catch (blatoErr) {
-        console.warn('[POST /api/extract-url] Blotato failed, trying direct fetch:', blatoErr instanceof Error ? blatoErr.message : blatoErr);
-        content = await fetchUrlDirectly(body.url);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`Blotato: ${msg}`);
+        console.warn('[POST /api/extract-url] Blotato failed:', msg);
       }
-    } else {
-      content = await fetchUrlDirectly(body.url);
+    }
+
+    if (!content) {
+      try {
+        content = await fetchUrlDirectly(body.url);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(msg);
+        console.warn('[POST /api/extract-url] Direct fetch failed:', msg);
+      }
+    }
+
+    if (!content) {
+      try {
+        content = await fetchViaJina(body.url);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(msg);
+        console.warn('[POST /api/extract-url] Jina Reader failed:', msg);
+      }
+    }
+
+    if (!content) {
+      throw new Error(errors.join('; '));
     }
 
     return NextResponse.json({ content });
