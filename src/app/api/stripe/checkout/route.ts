@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       metadata: {
+        app: 'resumebots',
         userId: uid,
         tier,
         fixesCount: String(tierConfig.fixes),

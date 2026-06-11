@@ -28,7 +28,13 @@ export async function POST(request: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const { userId, tier, fixesCount } = session.metadata || {};
+    const { app, userId, tier, fixesCount } = session.metadata || {};
+
+    // The Stripe account is shared across apps; ignore other apps' checkouts.
+    // Untagged sessions are treated as ours so in-flight checkouts still credit.
+    if (app && app !== 'resumebots') {
+      return NextResponse.json({ received: true, ignored: true });
+    }
 
     if (!userId || !fixesCount) {
       console.error('[Stripe Webhook] Missing metadata:', session.metadata);
