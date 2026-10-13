@@ -1,6 +1,6 @@
 /**
  * Strips markdown formatting and em dashes from AI-generated text.
- * Apply this to any user-visible text coming from Blotato/Perplexity API responses.
+ * Apply this to any user-visible text coming from AI (Claude API) responses.
  */
 export function stripMarkdown(text: string): string {
   if (!text) return '';

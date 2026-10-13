@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useBlotato } from '@/hooks/useBlotato';
+import { useAI } from '@/hooks/useAI';
 import { stripMarkdown } from '@/lib/text-utils';
 
 interface ScamResult {
@@ -41,7 +41,7 @@ function RiskBadge({ score }: { score: number }) {
 
 export default function ScamCheckPage() {
   const router = useRouter();
-  const { loading, error, checkScam } = useBlotato();
+  const { loading, error, checkScam } = useAI();
 
   const [companyName, setCompanyName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
@@ -63,15 +63,15 @@ export default function ScamCheckPage() {
       if (response) {
         // The hook returns the raw API response; normalize it
         const normalized: ScamResult = {
-          riskScore: response.riskScore ?? 0,
-          redFlags: response.redFlags ?? [],
+          riskScore: response.localAnalysis?.riskScore ?? 0,
+          redFlags: response.localAnalysis?.redFlags ?? [],
           aiAnalysis: response.aiAnalysis ?? response.result ?? '',
           sources: response.sources ?? [],
         };
         setResult(normalized);
       }
     } catch {
-      // Error handled by useBlotato
+      // Error handled by useAI
     }
   }, [companyName, jobTitle, jobUrl, jobDescription, checkScam]);
 

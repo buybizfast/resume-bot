@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryAndWait } from '@/lib/blotato';
+import { generateText, isAIConfigured, AI_NOT_CONFIGURED_ERROR } from '@/lib/ai';
 import { stripMarkdown } from '@/lib/text-utils';
 import { verifyAuth, requireCredits, deductCredit, handleAuthError, AuthError } from '@/lib/auth-helpers';
 
@@ -95,9 +95,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.BLOTATO_API_KEY) {
+    if (!isAIConfigured()) {
       return NextResponse.json(
-        { error: 'Blotato API key is not configured.' },
+        { error: AI_NOT_CONFIGURED_ERROR },
         { status: 500 }
       );
     }
@@ -168,7 +168,7 @@ CHANGES_START
 - (one line per change, plain text only)
 CHANGES_END`;
 
-    const rawResult = await queryAndWait(query, 60, 3000);
+    const rawResult = await generateText(query);
 
     // Parse the structured response
     let revisedHTML = '';

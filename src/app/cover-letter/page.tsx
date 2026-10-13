@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useResumeStore } from '@/hooks/useResumeStore';
-import { useBlotato } from '@/hooks/useBlotato';
+import { useAI } from '@/hooks/useAI';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import LoginModal from '@/components/auth/LoginModal';
 import { stripMarkdown } from '@/lib/text-utils';
@@ -12,7 +12,7 @@ import { exportToDocx, exportToPlainText } from '@/lib/export';
 export default function CoverLetterPage() {
   const router = useRouter();
   const resumes = useResumeStore((state) => state.resumes);
-  const { loading, error, generateCoverLetter } = useBlotato();
+  const { loading, error, generateCoverLetter } = useAI();
   const { user } = useAuthContext();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -49,7 +49,7 @@ export default function CoverLetterPage() {
         setGeneratedLetter(stripMarkdown(result));
       }
     } catch {
-      // Error state handled by useBlotato
+      // Error state handled by useAI
     }
   }, [user, selectedResume, jobDescription, companyName, tone, generateCoverLetter]);
 

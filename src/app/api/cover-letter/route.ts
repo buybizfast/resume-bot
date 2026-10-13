@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryAndWait } from '@/lib/blotato';
+import { generateText, isAIConfigured, AI_NOT_CONFIGURED_ERROR } from '@/lib/ai';
 import { verifyAuth, requireCredits, deductCredit, handleAuthError, AuthError } from '@/lib/auth-helpers';
 
 const VALID_TONES = ['professional', 'conversational'] as const;
@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.BLOTATO_API_KEY) {
+    if (!isAIConfigured()) {
       return NextResponse.json(
-        { error: 'Blotato API key is not configured.' },
+        { error: AI_NOT_CONFIGURED_ERROR },
         { status: 500 }
       );
     }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     const query = `Write a compelling cover letter for the following job. Job description: ${summarizedJD}. Candidate qualifications from resume: ${summarizedResume}. Company: ${body.companyName}. Tone: ${body.tone}. Requirements: 3-4 paragraphs, under 400 words, specific to this role and company, highlight relevant experience, show enthusiasm. Do NOT use generic phrases like 'I am writing to express my interest'. Start with a compelling hook.`;
 
-    const coverLetter = await queryAndWait(query);
+    const coverLetter = await generateText(query);
 
     // ─── Deduct credit on success ───
     try {

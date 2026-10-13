@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryAndWait } from '@/lib/blotato';
+import { generateText, isAIConfigured, AI_NOT_CONFIGURED_ERROR } from '@/lib/ai';
 import { verifyAuth, requireCredits, deductCredit, handleAuthError, AuthError } from '@/lib/auth-helpers';
 
 export async function POST(request: NextRequest) {
@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.BLOTATO_API_KEY) {
+    if (!isAIConfigured()) {
       return NextResponse.json(
-        { error: 'Blotato API key is not configured.' },
+        { error: AI_NOT_CONFIGURED_ERROR },
         { status: 500 }
       );
     }
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const query = `Given this job description: ${summarizedJD}. And this resume: ${summarizedResume}. Provide exactly 5 specific, actionable suggestions to optimize this resume for ATS systems and this specific role. For each suggestion, provide: 1) What to change 2) Why it matters 3) Example text to add. Focus on missing keywords, weak bullet points, and opportunities to quantify achievements. Format as a numbered list.`;
 
-    const suggestions = await queryAndWait(query);
+    const suggestions = await generateText(query);
 
     // ─── Deduct credit on success ───
     try {

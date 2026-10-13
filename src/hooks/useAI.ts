@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 
-export function useBlotato() {
+export function useAI() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuthContext();

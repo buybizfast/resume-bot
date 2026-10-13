@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useJobStore } from '@/hooks/useJobStore';
 import { useResumeStore } from '@/hooks/useResumeStore';
-import { useBlotato } from '@/hooks/useBlotato';
+import { useAI } from '@/hooks/useAI';
 import { useDebounce } from '@/hooks/useDebounce';
 import { stripMarkdown } from '@/lib/text-utils';
 
@@ -80,7 +80,7 @@ export default function DidYouKnowCard() {
   const jobDescription = useJobStore((state) => state.jobDescription);
   const debouncedDescription = useDebounce(jobDescription, 2000);
   const getActiveResume = useResumeStore((state) => state.getActiveResume);
-  const { getDidYouKnow, loading, error } = useBlotato();
+  const { getDidYouKnow, loading, error } = useAI();
 
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [dismissed, setDismissed] = useState(false);
@@ -130,7 +130,7 @@ export default function DidYouKnowCard() {
           }
         }
       } catch {
-        // Error tracked in useBlotato
+        // Error tracked in useAI
       } finally {
         setLocalLoading(false);
       }

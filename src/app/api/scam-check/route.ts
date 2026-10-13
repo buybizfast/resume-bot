@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryAndWait } from '@/lib/blotato';
+import { generateText, isAIConfigured, AI_NOT_CONFIGURED_ERROR } from '@/lib/ai';
 
 interface LocalAnalysis {
   redFlags: string[];
@@ -109,9 +109,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.BLOTATO_API_KEY) {
+    if (!isAIConfigured()) {
       return NextResponse.json(
-        { error: 'Blotato API key is not configured.' },
+        { error: AI_NOT_CONFIGURED_ERROR },
         { status: 500 }
       );
     }
@@ -131,9 +131,9 @@ export async function POST(request: NextRequest) {
       queryParts += ` Job posting URL: ${body.jobUrl}.`;
     }
 
-    const query = `${queryParts} Research the following: 1) Does the company have a BBB profile? What rating? 2) Does it have a Glassdoor presence with employee reviews? 3) Does it have a verified LinkedIn company page? 4) Are there any reported scam complaints about this company? 5) How old is the company's website domain? 6) Are there legitimate news articles about this company? Provide a factual assessment of the company's legitimacy with sources.`;
+    const query = `${queryParts} Research the following: 1) Does the company have a BBB profile? What rating? 2) Does it have a Glassdoor presence with employee reviews? 3) Does it have a verified LinkedIn company page? 4) Are there any reported scam complaints about this company? 5) How old is the company's website domain? 6) Are there legitimate news articles about this company? Be efficient: one well-chosen search per question is usually enough. Provide a factual assessment of the company's legitimacy with sources.`;
 
-    const aiAnalysis = await queryAndWait(query);
+    const aiAnalysis = await generateText(query, { webSearch: { maxUses: 6 } });
 
     return NextResponse.json({ localAnalysis, aiAnalysis });
   } catch (err) {

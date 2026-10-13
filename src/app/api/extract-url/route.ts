@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractFromUrl } from '@/lib/blotato';
 
 // Sites known to block automated fetching via Cloudflare or similar.
 // We short-circuit with a helpful message instead of failing opaquely.
@@ -129,28 +128,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fallback chain: Blotato (if configured) → direct fetch → Jina Reader
+    // Fallback chain: direct fetch → Jina Reader
     let content: string | undefined;
     const errors: string[] = [];
 
-    if (process.env.BLOTATO_API_KEY) {
-      try {
-        content = await extractFromUrl(body.url);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        errors.push(`Blotato: ${msg}`);
-        console.warn('[POST /api/extract-url] Blotato failed:', msg);
-      }
-    }
-
-    if (!content) {
-      try {
-        content = await fetchUrlDirectly(body.url);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        errors.push(msg);
-        console.warn('[POST /api/extract-url] Direct fetch failed:', msg);
-      }
+    try {
+      content = await fetchUrlDirectly(body.url);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(msg);
+      console.warn('[POST /api/extract-url] Direct fetch failed:', msg);
     }
 
     if (!content) {

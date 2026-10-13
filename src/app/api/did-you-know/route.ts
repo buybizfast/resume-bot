@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryAndWait } from '@/lib/blotato';
+import { generateText, isAIConfigured, AI_NOT_CONFIGURED_ERROR, MODELS } from '@/lib/ai';
 import { stripMarkdown } from '@/lib/text-utils';
 
 export async function POST(request: NextRequest) {
@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.BLOTATO_API_KEY) {
+    if (!isAIConfigured()) {
       return NextResponse.json(
-        { error: 'Blotato API key is not configured.' },
+        { error: AI_NOT_CONFIGURED_ERROR },
         { status: 500 }
       );
     }
@@ -55,7 +55,7 @@ Example:
 
 Be extremely specific to ${body.careerField}. No generic "use ChatGPT to write emails" stuff.`;
 
-    const rawResult = await queryAndWait(query);
+    const rawResult = await generateText(query, { model: MODELS.light, effort: 'low', maxTokens: 4000 });
 
     const recommendations = parseRecommendations(rawResult);
 
