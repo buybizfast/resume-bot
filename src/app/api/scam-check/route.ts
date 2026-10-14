@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateText, isAIConfigured, AI_NOT_CONFIGURED_ERROR } from '@/lib/ai';
+import { generateWithWebSearch, isAIConfigured, AI_NOT_CONFIGURED_ERROR, WebSearchUnavailableError } from '@/lib/ai';
 
 interface LocalAnalysis {
   redFlags: string[];
@@ -133,7 +133,15 @@ export async function POST(request: NextRequest) {
 
     const query = `${queryParts} Research the following: 1) Does the company have a BBB profile? What rating? 2) Does it have a Glassdoor presence with employee reviews? 3) Does it have a verified LinkedIn company page? 4) Are there any reported scam complaints about this company? 5) How old is the company's website domain? 6) Are there legitimate news articles about this company? Be efficient: one well-chosen search per question is usually enough. Provide a factual assessment of the company's legitimacy with sources.`;
 
-    const aiAnalysis = await generateText(query, { webSearch: { maxUses: 6 } });
+    // Six questions are searched in one parallel batch; headroom lets a failed search retry.
+    let aiAnalysis: string;
+    try {
+      aiAnalysis = await generateWithWebSearch(query, { maxSearches: 10 });
+    } catch (err) {
+      if (!(err instanceof WebSearchUnavailableError)) throw err;
+      // Still return the local red-flag analysis; it does not depend on the web.
+      aiAnalysis = `${err.message} The red-flag check above was still run on the posting text.`;
+    }
 
     return NextResponse.json({ localAnalysis, aiAnalysis });
   } catch (err) {
